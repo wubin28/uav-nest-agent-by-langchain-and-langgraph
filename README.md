@@ -9,8 +9,9 @@
 ```
 ./setup.sh
 
-source venv/bin/activate
+source ./.venv/bin/activate
 
+# Optional: when you run the commands on wsl2 ubuntu
 uv pip install -U 'httpx[socks]'
 
 python uav-nest-agent-by-langchain.py
