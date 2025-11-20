@@ -1,0 +1,19 @@
+# LangChain Core Dependencies (2025 Latest Stable Versions)
+# Requires Python 3.12 (not 3.13+)
+# Using >= to allow pip to resolve compatible versions automatically
+langchain>=0.3.0,<0.4.0
+langchain-community>=0.3.0,<0.4.0
+langchain-openai>=0.3.0,<0.4.0
+
+# PDF Processing
+pypdf>=5.0.0
+
+# Vector Store - LanceDB (local, no database installation needed)
+lancedb>=0.17.0
+
+# Embeddings - FastEmbed (FREE local embedder, no API key needed)
+fastembed>=0.5.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
