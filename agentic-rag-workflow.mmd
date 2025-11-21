@@ -1,0 +1,23 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	classify_question(classify_question)
+	retrieve_parallel(retrieve_parallel)
+	check_sufficiency(check_sufficiency)
+	expand_sources(expand_sources)
+	generate_answer(generate_answer)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> classify_question;
+	classify_question --> retrieve_parallel;
+	expand_sources --> retrieve_parallel;
+	generate_answer --> __end__;
+	retrieve_parallel --> check_sufficiency;
+	check_sufficiency -.-> generate_answer;
+	check_sufficiency -.-> expand_sources;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
