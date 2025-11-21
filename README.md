@@ -20,18 +20,17 @@ python3 uav-nest-agent-multi-source.py
 ## Quickstart for uav-nest-agent-by-langchain.py
 
 ```bash
-./setup.sh
-
-source ./.venv/bin/activate
+python3.12 -m venv .venv
+source .venv/bin/activate
+which python3
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 
 # Optional: when you run the commands on wsl2 ubuntu
 uv pip install -U 'httpx[socks]'
 
 # Run single-source RAG demo
-python uav-nest-agent-by-langchain.py
-
-# Run multi-source RAG demo (compare 3 merge strategies)
-python uav-nest-agent-multi-source.py
+python3 uav-nest-agent-by-langchain.py
 ```
 
 ## 🎯 快速导航
