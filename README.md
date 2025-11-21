@@ -7,6 +7,8 @@
 ## Quickstart for uav-nest-agent-by-langchain.py
 
 ```bash
+deactivate
+rm -rf ./.venv
 python3.12 -m venv .venv
 source .venv/bin/activate
 which python3
@@ -19,7 +21,6 @@ uv pip install -U 'httpx[socks]'
 # Run single-source RAG demo
 python3 uav-nest-agent-by-langchain.py
 ```
-
 ## 🎯 快速导航
 
 | 我想... | 推荐文档 | 预计时间 |
