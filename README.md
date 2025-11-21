@@ -8,9 +8,9 @@
 
 ```bash
 deactivate
-rm -rf ./.venv
-python3.12 -m venv .venv
-source .venv/bin/activate
+rm -rf ./.stage2-venv
+python3.12 -m venv .stage2-venv
+source .stage2-venv/bin/activate
 which python3
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
@@ -20,6 +20,8 @@ python3 uav-nest-agent-multi-source.py
 ## Quickstart for uav-nest-agent-by-langchain.py
 
 ```bash
+deactivate
+rm -rf ./.venv
 python3.12 -m venv .venv
 source .venv/bin/activate
 which python3
