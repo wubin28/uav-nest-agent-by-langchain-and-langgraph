@@ -4,7 +4,20 @@
 
 > 💡 **从 Agno 转换而来，使用 LangChain v1.0（2025最新版），无需数据库，免费本地嵌入，完美支持中文！**
 
-## Quickstart
+## Quickstart for uav-nest-agent-multi-source.py
+
+```bash
+deactivate
+rm -rf ./.venv
+python3.12 -m venv .venv
+source .venv/bin/activate
+which python3
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
+python3 uav-nest-agent-multi-source.py
+```
+
+## Quickstart for uav-nest-agent-by-langchain.py
 
 ```bash
 ./setup.sh

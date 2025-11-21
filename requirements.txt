@@ -17,3 +17,11 @@ fastembed>=0.5.0
 # Environment Variables
 python-dotenv>=1.0.0
 
+# Document Processing - Unstructured (for various file formats)
+unstructured>=0.10.0
+
+# Security - Cryptography (required by unstructured)
+cryptography>=41.0.0
+
+# Markdown Support
+markdown>=3.5.0
