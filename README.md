@@ -4,18 +4,20 @@
 
 > 💡 **从 Agno 转换而来，使用 LangChain v1.0（2025最新版），无需数据库，免费本地嵌入，完美支持中文！**
 
-## Quickstart
+## Quickstart for uav-nest-agent-by-langchain.py
 
-```
-./setup.sh
-
-source ./.venv/bin/activate
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+which python3
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 
 # Optional: when you run the commands on wsl2 ubuntu
 uv pip install -U 'httpx[socks]'
 
-python uav-nest-agent-by-langchain.py
-
+# Run single-source RAG demo
+python3 uav-nest-agent-by-langchain.py
 ```
 
 ## 🎯 快速导航
