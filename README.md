@@ -4,6 +4,23 @@
 
 > 💡 **从 Agno 转换而来，使用 LangChain v1.0（2025最新版），无需数据库，免费本地嵌入，完美支持中文！**
 
+## Quickstart for uav-nest-agent-agentic-rag.py
+
+```bash
+deactivate
+rm -rf ./.stage3-venv
+python3.12 -m venv .stage3-venv
+source .stage3-venv/bin/activate
+which python3
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
+
+# Optional: when you run the commands on wsl2 ubuntu
+uv pip install -U 'httpx[socks]'
+
+python3 uav-nest-agent-agentic-rag.py
+```
+
 ## Quickstart for uav-nest-agent-multi-source.py
 
 ```bash

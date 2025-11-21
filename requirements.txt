@@ -25,3 +25,7 @@ cryptography>=41.0.0
 
 # Markdown Support
 markdown>=3.5.0
+
+# LangGraph Dependencies (Stage 3 - Agentic RAG)
+langgraph>=0.2.0,<0.3.0
+langgraph-checkpoint>=0.2.0,<0.3.0
