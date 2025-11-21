@@ -14,6 +14,10 @@ source .stage2-venv/bin/activate
 which python3
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
+
+# Optional: when you run the commands on wsl2 ubuntu
+uv pip install -U 'httpx[socks]'
+
 python3 uav-nest-agent-multi-source.py
 ```
 
