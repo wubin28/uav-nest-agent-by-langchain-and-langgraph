@@ -31,8 +31,8 @@ import lancedb
 
 from langchain_community.document_loaders import PyPDFLoader, UnstructuredMarkdownLoader
 from langchain_community.vectorstores import LanceDB
-from langchain_community.retrievers import EnsembleRetriever
 from langchain_core.documents import Document
+from langchain.retrievers import EnsembleRetriever
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
