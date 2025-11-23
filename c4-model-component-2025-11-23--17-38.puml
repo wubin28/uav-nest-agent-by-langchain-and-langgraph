@@ -1,0 +1,118 @@
+@startuml UAV Nest Agent - C4 Component Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+' External systems color
+!define EXTERNAL_SYSTEM_BG_COLOR #6B8E23
+!define STORAGE_BG_COLOR #8B4513
+
+title Component Diagram for UAV Nest Agent (LangChain RAG System)
+
+Person(user, "User", "Customer seeking information about UAV products")
+
+System_Boundary(agent_system, "UAV Nest Agent System") {
+    
+    Container_Boundary(main_container, "Main Application") {
+        Component(main_func, "Main Function", "Python Function", "Entry point that orchestrates agent initialization and demo queries")
+        
+        Component(agent_core, "UAVNestAgent", "Python Class", "Core RAG agent that manages the complete question-answering pipeline")
+        
+        Component(embeddings_mgr, "Embeddings Manager", "Component", "Initializes and manages embedding models (FastEmbed or OpenAI)")
+        
+        Component(llm_mgr, "LLM Manager", "Component", "Initializes and manages DeepSeek Reasoner model via OpenAI-compatible API")
+        
+        Component(pdf_loader, "PDF Loader", "PyPDFLoader", "Loads and parses PDF product brochure documents")
+        
+        Component(text_splitter, "Text Splitter", "RecursiveCharacterTextSplitter", "Splits documents into chunks with overlap for better context")
+        
+        Component(vector_store, "Vector Store", "LanceDB", "Stores and manages document embeddings for similarity search")
+        
+        Component(retriever, "Retriever", "LangChain Retriever", "Retrieves top-k relevant document chunks based on query similarity")
+        
+        Component(rag_chain, "RAG Chain", "LangChain LCEL", "Orchestrates retrieval, prompt formatting, and LLM generation")
+        
+        Component(api_key_handler, "API Key Handler", "Python Function", "Handles interactive API key collection and validation")
+    }
+}
+
+System_Ext(deepseek_api, "DeepSeek API", "External LLM service providing deepseek-reasoner model")
+
+System_Ext(openai_api, "OpenAI API", "Optional external service for embeddings (fallback)")
+
+System_Ext(pdf_file, "Autel Robotics Product Brochure PDF", "Source document containing UAV product information")
+
+System_Ext(lancedb_storage, "LanceDB Storage", "Local vector database storage (./tmp/lancedb)")
+
+' User interactions
+Rel(user, main_func, "1. Runs application and asks questions", "CLI")
+Rel(user, api_key_handler, "2. Provides API keys", "Interactive input")
+
+' Main function interactions
+Rel(main_func, api_key_handler, "Gets API keys if needed", "Python")
+Rel(main_func, agent_core, "3. Initializes and invokes", "Python")
+
+' Agent core interactions
+Rel(agent_core, embeddings_mgr, "4. Initializes embeddings model", "Python")
+Rel(agent_core, llm_mgr, "5. Initializes LLM", "Python")
+Rel(agent_core, pdf_loader, "6. Loads PDF document", "Python")
+Rel(agent_core, text_splitter, "8. Splits documents into chunks", "Python")
+Rel(agent_core, vector_store, "9. Creates/loads vector store", "Python")
+Rel(agent_core, retriever, "12. Sets up retriever", "Python")
+Rel(agent_core, rag_chain, "13. Builds and invokes RAG chain", "Python")
+
+' RAG chain workflow
+Rel(rag_chain, retriever, "14. Retrieves relevant chunks", "LCEL")
+Rel(rag_chain, llm_mgr, "16. Generates answer", "LCEL")
+
+' Retriever workflow
+Rel(retriever, vector_store, "15. Queries for similar vectors", "Python")
+
+' Vector store workflow
+Rel(vector_store, embeddings_mgr, "10. Uses for document embedding", "Python")
+Rel(vector_store, lancedb_storage, "11. Persists/loads vectors", "File I/O")
+
+' PDF processing workflow
+Rel(pdf_loader, pdf_file, "7. Reads PDF content", "File I/O")
+Rel(pdf_loader, text_splitter, "Passes documents to", "Python")
+
+' External API connections
+Rel(llm_mgr, deepseek_api, "17. Sends prompts and receives responses", "HTTPS/OpenAI SDK")
+Rel(embeddings_mgr, openai_api, "Gets embeddings (if not using FastEmbed)", "HTTPS/OpenAI SDK")
+
+' Notes
+note right of embeddings_mgr
+  **Embedding Options:**
+  1. FastEmbed (default, free, local)
+  2. OpenAI Embeddings (fallback)
+  
+  Uses same model approach as agno
+end note
+
+note right of rag_chain
+  **RAG Pipeline:**
+  1. Question → Retriever
+  2. Retriever → Format docs
+  3. Formatted context + Question → Prompt
+  4. Prompt → LLM
+  5. LLM → Answer (with sources)
+end note
+
+note right of vector_store
+  **Configuration:**
+  - Chunk size: 1500
+  - Chunk overlap: 300
+  - Top-k retrieval: 20
+  - Storage: Local LanceDB
+end note
+
+note right of llm_mgr
+  **LLM Configuration:**
+  - Model: deepseek-reasoner
+  - Temperature: 0 (deterministic)
+  - Max tokens: 4000
+  - Base URL: api.deepseek.com/v1
+end note
+
+SHOW_LEGEND()
+
+@enduml
+

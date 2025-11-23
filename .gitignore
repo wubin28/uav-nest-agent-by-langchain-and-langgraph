@@ -31,6 +31,7 @@ env.bak/
 venv.bak/
 .venv
 .stage2-venv
+.stage3-venv
 
 # IDE
 .vscode/
