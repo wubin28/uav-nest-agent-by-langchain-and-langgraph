@@ -1,0 +1,163 @@
+@startuml uav-nest-agent-multi-source-c4-component
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+' 定义颜色主题
+!define PERSON_BG_COLOR #08427B
+!define EXTERNAL_BG_COLOR #999999
+!define CONTAINER_BG_COLOR #1168BD
+!define COMPONENT_BG_COLOR #85BBF0
+
+title C4 Component Diagram: Multi-Source RAG Agent (LangChain)
+
+' ====================================================================
+' 1. Person (用户)
+' ====================================================================
+Person(user, "UAV系统分析师", "需要对比分析 EVO Nest 和 DJI Dock 的技术方案")
+
+' ====================================================================
+' 2. External Systems (外部系统)
+' ====================================================================
+System_Ext(deepseek_api, "DeepSeek API", "提供大语言模型推理服务\n(deepseek-reasoner)")
+System_Ext(fastembed, "FastEmbed/OpenAI", "提供文本嵌入向量服务\n(本地或云端)")
+System_Ext(lancedb, "LanceDB", "向量数据库存储\n(本地文件系统)")
+System_Ext(data_files, "数据源文件", "6个产品文档\n(PDF + Markdown)")
+
+' ====================================================================
+' 3. Container Boundary (容器边界)
+' ====================================================================
+Container_Boundary(app, "Multi-Source RAG Agent Application") {
+    
+    ' ================================================================
+    ' 4. Components (核心组件)
+    ' ================================================================
+    
+    ' 4.1 主控制器
+    Component(agent_main, "MultiSourceRAGAgent", "Python Class", "多源 RAG 代理主类\n- 初始化所有组件\n- 管理工作流\n- 协调策略对比")
+    
+    ' 4.2 文档加载层
+    Component(doc_loader, "Document Loaders", "LangChain Loaders", "文档加载器组件\n- PyPDFLoader (PDF文件)\n- UnstructuredMarkdownLoader (MD文件)\n- 添加元数据标签")
+    
+    Component(doc_filter, "Document Filter", "Static Method", "文档过滤器\n- 关键词过滤\n- 减少大文档噪音")
+    
+    Component(text_splitter, "Text Splitter", "RecursiveCharacterTextSplitter", "文本分割器\n- chunk_size=1000\n- chunk_overlap=200\n- 支持中英文分隔符")
+    
+    ' 4.3 向量化和存储层
+    Component(embeddings, "Embeddings Manager", "FastEmbed/OpenAI", "嵌入向量管理器\n- 初始化嵌入模型\n- 向量化文本块")
+    
+    Component(vector_stores, "Vector Stores Manager", "Dict[str, LanceDB]", "向量存储管理器\n- 管理6个独立向量库\n- 每个数据源一个表")
+    
+    ' 4.4 检索层
+    Component(retrievers, "Retrievers Manager", "Dict[str, Retriever]", "检索器管理器\n- 管理6个独立检索器\n- 按优先级分组(P1/P2/P3)")
+    
+    Component(strategy1, "Simple Concatenation Strategy", "Method", "策略1: 简单拼接\n- 按优先级顺序检索\n- 直接拼接所有结果")
+    
+    Component(strategy2, "RRF Fusion Strategy", "EnsembleRetriever", "策略3: RRF融合\n- 使用倒数排名融合\n- 平等对待所有数据源\n⚠️ 无法设置优先级权重")
+    
+    Component(strategy3, "Priority Filtering Strategy", "Method", "策略4: 优先级过滤\n- 先查高优先级\n- 阈值判断是否继续\n⚠️ 需完全自定义实现")
+    
+    ' 4.5 RAG链和生成层
+    Component(doc_formatter, "Document Formatter", "Static Method", "文档格式化器\n- 按优先级分组\n- 添加来源标注")
+    
+    Component(prompt, "Prompt Template", "ChatPromptTemplate", "提示词模板\n- 结构化对比分析\n- 要求引用来源")
+    
+    Component(llm, "LLM Interface", "ChatOpenAI", "大语言模型接口\n- DeepSeek API 调用\n- temperature=0\n- max_tokens=4000")
+    
+    Component(output_parser, "Output Parser", "StrOutputParser", "输出解析器\n- 提取文本答案")
+    
+    Component(rag_chain, "RAG Chain", "LCEL Chain", "RAG执行链\n- Prompt | LLM | Parser\n- 端到端推理")
+    
+    ' 4.6 工具层
+    Component(comparison, "Strategy Comparator", "Method", "策略对比器\n- 运行3种策略\n- 收集性能指标\n- 生成对比报告")
+    
+    Component(api_manager, "API Key Manager", "Function", "API密钥管理\n- 交互式获取密钥\n- 环境变量加载")
+}
+
+' ====================================================================
+' 5. Relationships (关系)
+' ====================================================================
+
+' 用户与系统交互
+Rel(user, agent_main, "运行对比实验", "CLI")
+Rel(agent_main, comparison, "调用")
+
+' 数据加载流程
+Rel(agent_main, doc_loader, "加载6个数据源")
+Rel(doc_loader, data_files, "读取", "File I/O")
+Rel(doc_loader, doc_filter, "调用过滤")
+Rel(agent_main, text_splitter, "分割文档块")
+
+' 向量化流程
+Rel(agent_main, api_manager, "获取API密钥")
+Rel(agent_main, embeddings, "初始化")
+Rel(embeddings, fastembed, "生成向量", "API/Local")
+Rel(agent_main, vector_stores, "创建/加载")
+Rel(vector_stores, lancedb, "存储/查询", "File I/O")
+Rel(vector_stores, embeddings, "使用")
+
+' 检索流程
+Rel(agent_main, retrievers, "创建检索器")
+Rel(retrievers, vector_stores, "查询")
+Rel(comparison, strategy1, "调用")
+Rel(comparison, strategy2, "调用")
+Rel(comparison, strategy3, "调用")
+Rel(strategy1, retrievers, "按优先级检索")
+Rel(strategy2, retrievers, "RRF融合检索")
+Rel(strategy3, retrievers, "条件检索")
+
+' RAG链执行流程
+Rel(strategy1, doc_formatter, "格式化文档")
+Rel(strategy2, doc_formatter, "格式化文档")
+Rel(strategy3, doc_formatter, "格式化文档")
+Rel(agent_main, prompt, "配置")
+Rel(agent_main, llm, "初始化")
+Rel(llm, deepseek_api, "调用推理", "HTTPS/REST")
+Rel(agent_main, output_parser, "配置")
+Rel(comparison, rag_chain, "执行")
+Rel(rag_chain, prompt, "使用")
+Rel(rag_chain, llm, "使用")
+Rel(rag_chain, output_parser, "使用")
+
+' 结果返回
+Rel(comparison, user, "返回对比报告", "Console Output")
+
+' ====================================================================
+' 6. Notes (说明)
+' ====================================================================
+note right of agent_main
+  **核心职责:**
+  - 初始化所有依赖组件
+  - 管理6个数据源配置
+  - 协调3种检索策略
+  - 生成对比分析报告
+  
+  **LangChain局限性:**
+  - 需手动管理多个检索器
+  - 缺乏统一管理接口
+end note
+
+note right of strategy2
+  **LangChain局限性 #1:**
+  EnsembleRetriever无法配置
+  数据源优先级权重，所有
+  数据源被平等对待
+end note
+
+note right of strategy3
+  **LangChain局限性 #2:**
+  标准RAG链不支持条件分支，
+  "先查A，不够再查B"需要
+  完全自定义实现(100+行代码)
+end note
+
+note bottom of vector_stores
+  **数据源优先级:**
+  - P1: 技术白皮书 (2个)
+  - P2: 用户手册 (2个)
+  - P3: 官网介绍 (2个)
+  共6个独立向量库
+end note
+
+SHOW_LEGEND()
+
+@enduml
+
