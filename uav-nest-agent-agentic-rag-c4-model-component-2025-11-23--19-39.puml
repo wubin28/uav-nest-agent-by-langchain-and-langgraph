@@ -1,0 +1,128 @@
+@startuml uav-nest-agent-agentic-rag-c4-component
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+' 定义主题和样式
+!define DEVICONS https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons
+!include DEVICONS/python.puml
+
+LAYOUT_WITH_LEGEND()
+
+title C4 Component Diagram - UAV Nest Agent Agentic RAG System
+
+Person(user, "User", "研究人员/工程师，需要对比分析 EVO Nest 和 DJI Dock")
+
+System_Boundary(agentic_rag_system, "Agentic RAG Application Container") {
+    
+    ' LangGraph 工作流编排组件
+    Component(langgraph_orchestrator, "LangGraph Orchestrator", "StateGraph", "编排整个 RAG 工作流，管理状态和节点转换")
+    
+    ' 核心业务组件
+    Component(question_classifier, "Question Classifier", "Node: classify_question", "使用 LLM 分类问题类型（基础信息/技术细节/对比分析），并路由到目标数据源")
+    
+    Component(parallel_retriever, "Parallel Retriever", "Node: retrieve_parallel", "使用 ThreadPoolExecutor 并行从多个向量存储中检索相关文档")
+    
+    Component(sufficiency_checker, "Sufficiency Checker", "Node: check_sufficiency", "评估检索到的信息是否充分（阈值：3个文档块）")
+    
+    Component(source_expander, "Source Expander", "Node: expand_sources", "实施多级扩展策略，添加更多数据源进行补充查询")
+    
+    Component(answer_generator, "Answer Generator", "Node: generate_answer", "基于检索到的文档生成带来源引用的答案")
+    
+    ' 数据访问组件
+    Component(vector_store_manager, "Vector Store Manager", "LanceDB Wrapper", "管理6个向量存储和检索器的生命周期")
+    
+    ' LLM 客户端组件
+    Component(classifier_llm, "Classifier LLM Client", "ChatOpenAI", "快速问题分类，使用 deepseek-chat 模型")
+    
+    Component(generator_llm, "Generator LLM Client", "ChatOpenAI", "高质量答案生成，使用 deepseek-reasoner 模型")
+    
+    ' 嵌入模型组件
+    Component(embeddings, "Embeddings Service", "FastEmbed/OpenAI", "将文本转换为向量表示，支持本地 FastEmbed 或 OpenAI API")
+    
+    ' 配置组件
+    Component(config_manager, "Configuration Manager", "DATA_SOURCES", "管理6个数据源配置（EVO Nest 和 DJI Dock 的白皮书/手册/官网）")
+}
+
+' 外部系统
+System_Ext(deepseek_api, "DeepSeek API", "提供 LLM 服务：\n- deepseek-chat（分类）\n- deepseek-reasoner（生成）")
+
+SystemDb_Ext(lancedb, "LanceDB Vector Store", "存储6个预构建的向量数据库：\n- evo_nest_whitepaper\n- dji_dock_whitepaper\n- evo_nest_manual\n- dji_dock_manual\n- evo_nest_webpage\n- dji_dock_webpage")
+
+System_Ext(embedding_api, "Embedding API", "可选的外部嵌入服务\n（如果不使用 FastEmbed）")
+
+' 用户交互关系
+Rel(user, langgraph_orchestrator, "提问", "ask(question)")
+Rel(langgraph_orchestrator, user, "返回答案", "GraphState")
+
+' 工作流编排关系
+Rel(langgraph_orchestrator, question_classifier, "启动流程", "START")
+Rel(question_classifier, langgraph_orchestrator, "返回问题类型和目标数据源", "GraphState")
+
+Rel(langgraph_orchestrator, parallel_retriever, "路由", "question_type, target_sources")
+Rel(parallel_retriever, langgraph_orchestrator, "返回检索文档", "chunks, sources_used")
+
+Rel(langgraph_orchestrator, sufficiency_checker, "路由", "chunks")
+Rel(sufficiency_checker, langgraph_orchestrator, "返回充分性判断", "is_sufficient")
+
+Rel_U(langgraph_orchestrator, source_expander, "路由（信息不足）", "条件边")
+Rel_U(source_expander, langgraph_orchestrator, "返回扩展数据源", "expanded target_sources")
+
+Rel(langgraph_orchestrator, answer_generator, "路由（信息充分）", "chunks, question")
+Rel(answer_generator, langgraph_orchestrator, "返回生成答案", "answer")
+
+' 组件间依赖关系
+Rel(question_classifier, classifier_llm, "调用分类", "CLASSIFICATION_PROMPT")
+Rel(classifier_llm, deepseek_api, "API 调用", "HTTPS/JSON")
+
+Rel(parallel_retriever, vector_store_manager, "并行查询", "get_relevant_documents()")
+Rel(vector_store_manager, lancedb, "向量检索", "similarity search")
+Rel(vector_store_manager, embeddings, "查询向量化", "embed_query()")
+
+Rel(answer_generator, generator_llm, "调用生成", "ANSWER_GENERATION_PROMPT")
+Rel(generator_llm, deepseek_api, "API 调用", "HTTPS/JSON")
+
+Rel(source_expander, config_manager, "读取配置", "DATA_SOURCES")
+Rel(question_classifier, config_manager, "读取配置", "DATA_SOURCES")
+
+Rel_D(embeddings, embedding_api, "可选调用", "如果使用 OpenAI Embeddings")
+
+' 循环关系（补充查询）
+Rel_Back(langgraph_orchestrator, parallel_retriever, "循环", "expand_sources → retrieve_parallel\n（最多3次迭代）")
+
+' 注释
+note right of langgraph_orchestrator
+  **LangGraph 特性**
+  • 条件边：根据信息充分性路由
+  • 并行节点：并发检索
+  • 状态管理：跟踪迭代历史
+  • 循环逻辑：自动补充查询
+end note
+
+note right of parallel_retriever
+  **并行检索优化**
+  使用 ThreadPoolExecutor
+  最多4个并发工作线程
+  显著提升多源查询性能
+end note
+
+note right of deepseek_api
+  **双 LLM 策略**
+  • deepseek-chat: 快速分类
+    温度=0, 最大令牌=100
+  • deepseek-reasoner: 高质量生成
+    温度=0, 最大令牌=4000
+end note
+
+note right of lancedb
+  **数据源优先级**
+  P1 (最高): 技术白皮书
+  P2 (中): 用户手册
+  P3 (低): 官网介绍
+  
+  **路由策略**
+  • basic_info → P3
+  • technical → P1
+  • comparison → P2+P3
+end note
+
+@enduml
+
